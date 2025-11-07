@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Media Redirect to Production
  * Description: Przekierowuje URL-e mediów na domenę produkcyjną, z możliwością ustawienia własnego katalogu wp-content.
- * Version: 1.8
+ * Version: 1.8.1
  * Author: Kasia Izak i ChatGPT
  */
 
@@ -64,6 +64,7 @@ function mrp_settings_page() {
                     <td>
                         <input type="text" name="mrp_production_domain"
                                value="<?php echo esc_attr(get_option('mrp_production_domain')); ?>"
+							   placeholder="https://domena.pl"
                                class="regular-text" />
                     </td>
                 </tr>
@@ -72,7 +73,7 @@ function mrp_settings_page() {
                     <td>
                         <input type="text" name="mrp_custom_wpcontent"
                                value="<?php echo esc_attr(get_option('mrp_custom_wpcontent')); ?>"
-                               placeholder="/app/wp-content"
+                               placeholder="/app"
                                class="regular-text" />
                         <p class="description">Wprowadź tylko jeśli Twój katalog `wp-content` ma inną nazwę lub ścieżkę.</p>
                     </td>
