@@ -2,13 +2,24 @@
 /**
  * Plugin Name: Media Redirect to Production
  * Description: Przekierowuje URL-e mediów na domenę produkcyjną, z możliwością ustawienia własnego katalogu wp-content.
- * Version: 1.8.1
+ * Version: 1.9.0
  * Author: Kasia Izak i ChatGPT
  */
 
 // Filtry URL-i mediów
 add_filter('wp_get_attachment_url', 'mrp_filter_url');
 add_filter('wp_get_attachment_image_src', 'mrp_filter_image_src');
+
+function mrp_should_rewrite_urls() {
+    $production = get_option('mrp_production_domain');
+    if (!$production) return false;
+
+    // Usuń protokół i www z obu domen
+    $local = parse_url(home_url(), PHP_URL_HOST);
+    $remote = parse_url($production, PHP_URL_HOST);
+
+    return $local !== $remote;
+}
 
 function mrp_filter_url($url) {
     return mrp_replace_url($url);
@@ -24,7 +35,7 @@ function mrp_filter_image_src($image) {
 function mrp_replace_url($url) {
     $domain = get_option('mrp_production_domain');
     $custom_wpcontent = get_option('mrp_custom_wpcontent');
-    if (!$domain) return $url;
+    if (!mrp_should_rewrite_urls()) return $url;
 
     // Ustal lokalny base URL
     $local_wpcontent_url = content_url();
@@ -90,7 +101,7 @@ add_filter('wp_calculate_image_srcset', 'mrp_filter_srcset');
 function mrp_filter_srcset($sources) {
     $domain = get_option('mrp_production_domain');
     $custom_wpcontent = get_option('mrp_custom_wpcontent');
-    if (!$domain || !is_array($sources)) return $sources;
+    if (!mrp_should_rewrite_urls() || !is_array($sources)) return $sources;
 
     $local_wpcontent_url = content_url();
     if ($custom_wpcontent) {
@@ -113,7 +124,7 @@ add_filter('wp_get_attachment_image_attributes', 'mrp_filter_image_src_attribute
 function mrp_filter_image_src_attribute($attr, $attachment, $size) {
     $domain = get_option('mrp_production_domain');
     $custom_wpcontent = get_option('mrp_custom_wpcontent');
-    if (!$domain || empty($attr['src'])) return $attr;
+    if (!mrp_should_rewrite_urls() || empty($attr['src'])) return $attr;
 
     $local_wpcontent_url = content_url();
     if ($custom_wpcontent) {
@@ -134,7 +145,8 @@ add_filter('the_content', 'mrp_replace_media_urls_in_content', 99);
 function mrp_replace_media_urls_in_content($content) {
     $domain = get_option('mrp_production_domain');
     $custom_wpcontent = get_option('mrp_custom_wpcontent');
-    if (!$domain) return $content;
+    if (!mrp_should_rewrite_urls()) return $content;
+
 
     $local_wpcontent_url = content_url();
     if ($custom_wpcontent) {
@@ -153,7 +165,8 @@ add_action('template_redirect', function () {
 function mrp_buffer_start($buffer) {
     $domain = get_option('mrp_production_domain');
     $custom_wpcontent = get_option('mrp_custom_wpcontent');
-    if (!$domain) return $buffer;
+    if (!mrp_should_rewrite_urls()) return $buffer;
+
 
     $local_wpcontent_url = content_url();
     if ($custom_wpcontent) {
@@ -176,7 +189,7 @@ add_action('wp_footer', 'mrp_inject_frontend_rewrite_script');
 function mrp_inject_frontend_rewrite_script() {
     // Nie rób nic, jeśli nie ustawiono domeny
     $domain = get_option('mrp_production_domain');
-    if (!$domain) return;
+    if (!mrp_should_rewrite_urls()) return;
 
     ?>
     <script>
