@@ -56,6 +56,14 @@ function mrp_register_settings() {
 		)
 	);
 
+	register_setting(
+		MRP_SETTINGS_GROUP,
+		MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT,
+		array(
+			'sanitize_callback' => 'mrp_sanitize_checkbox',
+		)
+	);
+
 	add_settings_section( 'mrp_main_section', '', '__return_empty_string', MRP_SETTINGS_PAGE );
 	add_settings_field(
 		MRP_OPTION_PRODUCTION_DOMAIN,
@@ -80,8 +88,15 @@ function mrp_register_settings() {
 	);
 	add_settings_field(
 		MRP_OPTION_ENABLE_WPBAKERY_COMPAT,
-		'Kompatybilność WPBakery',
+		'Kompatybilność z wtyczką WPBakery',
 		'mrp_render_wpbakery_compat_field',
+		MRP_SETTINGS_PAGE,
+		'mrp_main_section'
+	);
+	add_settings_field(
+		MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT,
+		'Kompatybilność z motywem HorseClub',
+		'mrp_render_horseclub_latest_post_compat_field',
 		MRP_SETTINGS_PAGE,
 		'mrp_main_section'
 	);
@@ -139,6 +154,21 @@ function mrp_render_wpbakery_compat_field() {
 			<?php checked( mrp_should_enable_wpbakery_compat() ); ?>
 		/>
 		Włącz dodatkowe obejścia dla `vc_single_image` i `vc_gallery` z WPBakery.
+	</label>
+	<?php
+}
+
+function mrp_render_horseclub_latest_post_compat_field() {
+	?>
+	<input type="hidden" name="<?php echo esc_attr( MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT ); ?>" value="0" />
+	<label>
+		<input
+			type="checkbox"
+			name="<?php echo esc_attr( MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT ); ?>"
+			value="1"
+			<?php checked( mrp_should_enable_horseclub_latest_post_compat() ); ?>
+		/>
+		Włącz obejście dla shortcode `horseclub_latest_post`, który renderuje obrazki przez `horseclub_resize()`.
 	</label>
 	<?php
 }

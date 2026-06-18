@@ -22,6 +22,10 @@ function mrp_should_enable_wpbakery_compat() {
 	return (bool) $enabled;
 }
 
+function mrp_should_enable_horseclub_latest_post_compat() {
+	return (bool) get_option( MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT, 0 );
+}
+
 function mrp_get_local_wpcontent_url() {
 	$custom_wpcontent = mrp_get_custom_wpcontent_path();
 	if ( '' !== $custom_wpcontent ) {
