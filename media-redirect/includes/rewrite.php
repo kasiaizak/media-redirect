@@ -11,41 +11,36 @@ add_action( 'template_redirect', 'mrp_start_output_buffer' );
 add_action( 'wp_enqueue_scripts', 'mrp_enqueue_frontend_rewrite_script' );
 
 function mrp_should_rewrite_urls() {
-	$production = get_option( 'mrp_production_domain' );
-	if ( ! $production ) {
+	$production_domain = mrp_get_production_domain();
+	if ( '' === $production_domain ) {
 		return false;
 	}
 
-	$local  = parse_url( home_url(), PHP_URL_HOST );
-	$remote = parse_url( $production, PHP_URL_HOST );
+	$local_host  = wp_parse_url( home_url(), PHP_URL_HOST );
+	$remote_host = wp_parse_url( $production_domain, PHP_URL_HOST );
 
-	return $local !== $remote;
-}
-
-function mrp_should_prefer_local_uploads() {
-	return (bool) get_option( 'mrp_prefer_local_uploads' );
-}
-
-function mrp_get_local_wpcontent_url() {
-	$custom_wpcontent = trim( (string) get_option( 'mrp_custom_wpcontent' ) );
-	if ( '' !== $custom_wpcontent ) {
-		return home_url( rtrim( $custom_wpcontent, '/' ) );
-	}
-
-	return content_url();
-}
-
-function mrp_get_remote_base() {
-	$domain              = rtrim( (string) get_option( 'mrp_production_domain' ), '/' );
-	$local_wpcontent_url = mrp_get_local_wpcontent_url();
-
-	return $domain . '/' . trim( (string) parse_url( $local_wpcontent_url, PHP_URL_PATH ), '/' );
+	return $local_host !== $remote_host;
 }
 
 function mrp_is_local_upload_url( $url ) {
-	$local_wpcontent_url = mrp_get_local_wpcontent_url();
+	$local_wpcontent_url = trailingslashit( mrp_get_local_wpcontent_url() ) . 'uploads/';
 
-	return strpos( (string) $url, $local_wpcontent_url . '/uploads/' ) !== false;
+	return strpos( (string) $url, $local_wpcontent_url ) !== false;
+}
+
+function mrp_get_upload_relative_path( $url, $base_url ) {
+	$url_path  = wp_parse_url( (string) $url, PHP_URL_PATH );
+	$base_path = wp_parse_url( (string) $base_url, PHP_URL_PATH );
+	if ( ! $url_path || ! $base_path ) {
+		return '';
+	}
+
+	$normalized_base_path = trailingslashit( rtrim( $base_path, '/' ) );
+	if ( strpos( $url_path, $normalized_base_path ) !== 0 ) {
+		return '';
+	}
+
+	return ltrim( substr( $url_path, strlen( $normalized_base_path ) ), '/' );
 }
 
 function mrp_local_upload_file_exists( $url ) {
@@ -58,18 +53,7 @@ function mrp_local_upload_file_exists( $url ) {
 		return false;
 	}
 
-	$url_path     = parse_url( (string) $url, PHP_URL_PATH );
-	$baseurl_path = parse_url( (string) $uploads['baseurl'], PHP_URL_PATH );
-	if ( ! $url_path || ! $baseurl_path ) {
-		return false;
-	}
-
-	$baseurl_path = rtrim( $baseurl_path, '/' );
-	if ( strpos( $url_path, $baseurl_path . '/' ) !== 0 ) {
-		return false;
-	}
-
-	$relative_path = ltrim( substr( $url_path, strlen( $baseurl_path ) ), '/' );
+	$relative_path = mrp_get_upload_relative_path( $url, $uploads['baseurl'] );
 	if ( '' === $relative_path ) {
 		return false;
 	}
@@ -87,7 +71,7 @@ function mrp_local_upload_file_exists( $url ) {
 	return strpos( $normalized_file, $normalized_base ) === 0 && is_file( $real_file );
 }
 
-function mrp_replace_url( $url ) {
+function mrp_rewrite_media_url( $url ) {
 	if ( ! mrp_should_rewrite_urls() || ! mrp_is_local_upload_url( $url ) ) {
 		return $url;
 	}
@@ -99,7 +83,7 @@ function mrp_replace_url( $url ) {
 	return str_replace( mrp_get_local_wpcontent_url(), mrp_get_remote_base(), $url );
 }
 
-function mrp_rewrite_upload_urls_in_text( $content ) {
+function mrp_rewrite_text_content( $content ) {
 	if ( ! mrp_should_rewrite_urls() ) {
 		return $content;
 	}
@@ -109,19 +93,19 @@ function mrp_rewrite_upload_urls_in_text( $content ) {
 	return preg_replace_callback(
 		$pattern,
 		function ( $matches ) {
-			return mrp_replace_url( $matches[0] );
+			return mrp_rewrite_media_url( $matches[0] );
 		},
 		$content
 	);
 }
 
 function mrp_filter_url( $url ) {
-	return mrp_replace_url( $url );
+	return mrp_rewrite_media_url( $url );
 }
 
 function mrp_filter_image_src( $image ) {
 	if ( is_array( $image ) && isset( $image[0] ) ) {
-		$image[0] = mrp_replace_url( $image[0] );
+		$image[0] = mrp_rewrite_media_url( $image[0] );
 	}
 
 	return $image;
@@ -134,7 +118,7 @@ function mrp_filter_srcset( $sources ) {
 
 	foreach ( $sources as $key => $source ) {
 		if ( ! empty( $source['url'] ) ) {
-			$sources[ $key ]['url'] = mrp_replace_url( $source['url'] );
+			$sources[ $key ]['url'] = mrp_rewrite_media_url( $source['url'] );
 		}
 	}
 
@@ -146,21 +130,21 @@ function mrp_filter_image_src_attribute( $attr, $attachment, $size ) {
 		return $attr;
 	}
 
-	$attr['src'] = mrp_replace_url( $attr['src'] );
+	$attr['src'] = mrp_rewrite_media_url( $attr['src'] );
 
 	return $attr;
 }
 
 function mrp_replace_media_urls_in_content( $content ) {
-	return mrp_rewrite_upload_urls_in_text( $content );
+	return mrp_rewrite_text_content( $content );
 }
 
 function mrp_start_output_buffer() {
-	ob_start( 'mrp_buffer_start' );
+	ob_start( 'mrp_rewrite_buffer' );
 }
 
-function mrp_buffer_start( $buffer ) {
-	return mrp_rewrite_upload_urls_in_text( $buffer );
+function mrp_rewrite_buffer( $buffer ) {
+	return mrp_rewrite_text_content( $buffer );
 }
 
 function mrp_enqueue_frontend_rewrite_script() {
@@ -180,7 +164,8 @@ function mrp_enqueue_frontend_rewrite_script() {
 		'mrp-frontend-rewrite',
 		'mrpFrontendConfig',
 		array(
-			'prodDomain' => rtrim( (string) get_option( 'mrp_production_domain' ), '/' ),
+			'localBaseUrl'  => mrp_get_local_wpcontent_url(),
+			'remoteBaseUrl' => mrp_get_remote_base(),
 		)
 	);
 }

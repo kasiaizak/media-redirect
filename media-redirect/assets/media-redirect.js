@@ -1,37 +1,34 @@
 document.addEventListener(
 	'DOMContentLoaded',
 	function () {
-		const prodDomain = window.mrpFrontendConfig && window.mrpFrontendConfig.prodDomain;
-		const localHost  = window.location.origin;
+		const config = window.mrpFrontendConfig || {};
+		const localBaseUrl = config.localBaseUrl;
+		const remoteBaseUrl = config.remoteBaseUrl;
 
-		if ( ! prodDomain ) {
+		if ( ! localBaseUrl || ! remoteBaseUrl ) {
 			return;
+		}
+
+		function rewriteValue( value ) {
+			if ( ! value || ! value.includes( '/uploads/' ) || ! value.includes( localBaseUrl ) ) {
+				return value;
+			}
+
+			return value.replaceAll( localBaseUrl, remoteBaseUrl );
 		}
 
 		document.querySelectorAll( 'img, source' ).forEach(
 			function ( el ) {
-				if ( el.src && el.src.includes( '/uploads/' ) ) {
-					el.src = el.src.replace( localHost, prodDomain );
+				el.src = rewriteValue( el.src );
+				el.srcset = rewriteValue( el.srcset );
+
+				if ( el.dataset ) {
+					el.dataset.src = rewriteValue( el.dataset.src );
+					el.dataset.bg = rewriteValue( el.dataset.bg );
 				}
 
-				if ( el.srcset && el.srcset.includes( '/uploads/' ) ) {
-					el.srcset = el.srcset.replaceAll( localHost, prodDomain );
-				}
-
-				if ( el.dataset.src && el.dataset.src.includes( '/uploads/' ) ) {
-					el.dataset.src = el.dataset.src.replace( localHost, prodDomain );
-				}
-
-				if ( el.dataset.bg && el.dataset.bg.includes( '/uploads/' ) ) {
-					el.dataset.bg = el.dataset.bg.replace( localHost, prodDomain );
-				}
-
-				if (
-					el.style &&
-					el.style.backgroundImage &&
-					el.style.backgroundImage.includes( '/uploads/' )
-				) {
-					el.style.backgroundImage = el.style.backgroundImage.replace( localHost, prodDomain );
+				if ( el.style && el.style.backgroundImage ) {
+					el.style.backgroundImage = rewriteValue( el.style.backgroundImage );
 				}
 			}
 		);
