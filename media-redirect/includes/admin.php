@@ -12,7 +12,7 @@ function mrp_add_settings_link_to_plugin_meta( $plugin_meta, $plugin_file ) {
 
 	$settings_link = sprintf(
 		'<a href="%s">%s</a>',
-		esc_url( admin_url( 'options-general.php?page=' . MRP_SETTINGS_PAGE ) ),
+		esc_url( admin_url( 'tools.php?page=' . MRP_SETTINGS_PAGE ) ),
 		esc_html__( 'Ustawienia', 'media-redirect' )
 	);
 
@@ -20,7 +20,7 @@ function mrp_add_settings_link_to_plugin_meta( $plugin_meta, $plugin_file ) {
 }
 
 function mrp_register_settings_page() {
-	add_options_page( 'Media Redirect', 'Media Redirect', 'manage_options', MRP_SETTINGS_PAGE, 'mrp_settings_page' );
+	add_management_page( 'Media Redirect', 'Media Redirect', 'manage_options', MRP_SETTINGS_PAGE, 'mrp_settings_page' );
 }
 
 function mrp_register_settings() {
@@ -48,17 +48,25 @@ function mrp_register_settings() {
 		)
 	);
 
+	register_setting(
+		MRP_SETTINGS_GROUP,
+		MRP_OPTION_ENABLE_WPBAKERY_COMPAT,
+		array(
+			'sanitize_callback' => 'mrp_sanitize_checkbox',
+		)
+	);
+
 	add_settings_section( 'mrp_main_section', '', '__return_empty_string', MRP_SETTINGS_PAGE );
 	add_settings_field(
 		MRP_OPTION_PRODUCTION_DOMAIN,
-		'Domena produkcyjna (z https://)',
+		'Domena produkcyjna',
 		'mrp_render_production_domain_field',
 		MRP_SETTINGS_PAGE,
 		'mrp_main_section'
 	);
 	add_settings_field(
 		MRP_OPTION_CUSTOM_WPCONTENT,
-		'Niestandardowa sciezka wp-content (opcjonalnie)',
+		'Niestandardowa ścieżka wp-content (opcjonalnie)',
 		'mrp_render_custom_wpcontent_field',
 		MRP_SETTINGS_PAGE,
 		'mrp_main_section'
@@ -67,6 +75,13 @@ function mrp_register_settings() {
 		MRP_OPTION_PREFER_LOCAL_UPLOADS,
 		'Preferuj lokalne pliki z uploads',
 		'mrp_render_prefer_local_uploads_field',
+		MRP_SETTINGS_PAGE,
+		'mrp_main_section'
+	);
+	add_settings_field(
+		MRP_OPTION_ENABLE_WPBAKERY_COMPAT,
+		'Kompatybilność WPBakery',
+		'mrp_render_wpbakery_compat_field',
 		MRP_SETTINGS_PAGE,
 		'mrp_main_section'
 	);
@@ -81,6 +96,7 @@ function mrp_render_production_domain_field() {
 		placeholder="https://domena.pl"
 		class="regular-text"
 	/>
+	<p class="description">Wprowadź pełny adres, włącznie z protokołem http/https.</p>
 	<?php
 }
 
@@ -93,7 +109,7 @@ function mrp_render_custom_wpcontent_field() {
 		placeholder="/app"
 		class="regular-text"
 	/>
-	<p class="description">Wprowadz tylko jesli katalog `wp-content` ma inna nazwe lub sciezke.</p>
+	<p class="description">Wprowadź tylko, jeśli katalog `wp-content` ma inną nazwę lub ścieżkę.</p>
 	<?php
 }
 
@@ -107,7 +123,22 @@ function mrp_render_prefer_local_uploads_field() {
 			value="1"
 			<?php checked( mrp_should_prefer_local_uploads() ); ?>
 		/>
-		Jesli plik fizycznie istnieje w lokalnym katalogu `uploads`, zostaw lokalny URL zamiast przekierowania.
+		Jeśli plik fizycznie istnieje w lokalnym katalogu `uploads`, zostaw lokalny URL zamiast przekierowania.
+	</label>
+	<?php
+}
+
+function mrp_render_wpbakery_compat_field() {
+	?>
+	<input type="hidden" name="<?php echo esc_attr( MRP_OPTION_ENABLE_WPBAKERY_COMPAT ); ?>" value="0" />
+	<label>
+		<input
+			type="checkbox"
+			name="<?php echo esc_attr( MRP_OPTION_ENABLE_WPBAKERY_COMPAT ); ?>"
+			value="1"
+			<?php checked( mrp_should_enable_wpbakery_compat() ); ?>
+		/>
+		Włącz dodatkowe obejścia dla `vc_single_image` i `vc_gallery` z WPBakery.
 	</label>
 	<?php
 }

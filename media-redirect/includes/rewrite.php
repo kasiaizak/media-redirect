@@ -10,6 +10,56 @@ add_filter( 'the_content', 'mrp_replace_media_urls_in_content', 99 );
 add_action( 'template_redirect', 'mrp_start_output_buffer' );
 add_action( 'wp_enqueue_scripts', 'mrp_enqueue_frontend_rewrite_script' );
 
+function mrp_with_rewrite_filters_suspended( $callback ) {
+	$filters = array(
+		array( 'wp_get_attachment_url', 'mrp_filter_url', 10, 1 ),
+		array( 'wp_get_attachment_image_src', 'mrp_filter_image_src', 10, 1 ),
+		array( 'wp_calculate_image_srcset', 'mrp_filter_srcset', 10, 1 ),
+		array( 'wp_get_attachment_image_attributes', 'mrp_filter_image_src_attribute', 10, 3 ),
+	);
+	$removed = array();
+
+	foreach ( $filters as $filter ) {
+		list( $tag, $function, $priority, $accepted_args ) = $filter;
+
+		if ( false !== has_filter( $tag, $function ) ) {
+			remove_filter( $tag, $function, $priority );
+			$removed[] = $filter;
+		}
+	}
+
+	try {
+		return call_user_func( $callback );
+	} finally {
+		foreach ( $removed as $filter ) {
+			list( $tag, $function, $priority, $accepted_args ) = $filter;
+			add_filter( $tag, $function, $priority, $accepted_args );
+		}
+	}
+}
+
+function mrp_backtrace_contains_function( $functions ) {
+	foreach ( debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS ) as $frame ) {
+		if ( empty( $frame['function'] ) ) {
+			continue;
+		}
+
+		$function = $frame['function'];
+		if ( in_array( $function, $functions, true ) ) {
+			return true;
+		}
+
+		if ( ! empty( $frame['class'] ) ) {
+			$qualified = $frame['class'] . '::' . $function;
+			if ( in_array( $qualified, $functions, true ) ) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 function mrp_should_rewrite_urls() {
 	$production_domain = mrp_get_production_domain();
 	if ( '' === $production_domain ) {
@@ -43,8 +93,8 @@ function mrp_get_upload_relative_path( $url, $base_url ) {
 	return ltrim( substr( $url_path, strlen( $normalized_base_path ) ), '/' );
 }
 
-function mrp_local_upload_file_exists( $url ) {
-	if ( ! mrp_should_prefer_local_uploads() || ! mrp_is_local_upload_url( $url ) ) {
+function mrp_upload_file_exists( $url ) {
+	if ( ! mrp_is_local_upload_url( $url ) ) {
 		return false;
 	}
 
@@ -71,8 +121,25 @@ function mrp_local_upload_file_exists( $url ) {
 	return strpos( $normalized_file, $normalized_base ) === 0 && is_file( $real_file );
 }
 
+function mrp_local_upload_file_exists( $url ) {
+	return mrp_should_prefer_local_uploads() && mrp_upload_file_exists( $url );
+}
+
+function mrp_is_generated_subsize_url( $url ) {
+	$url_path = wp_parse_url( (string) $url, PHP_URL_PATH );
+	if ( ! is_string( $url_path ) || '' === $url_path ) {
+		return false;
+	}
+
+	return (bool) preg_match( '/-\d+x\d+\.(?:avif|gif|jpe?g|png|webp)$/i', $url_path );
+}
+
 function mrp_rewrite_media_url( $url ) {
 	if ( ! mrp_should_rewrite_urls() || ! mrp_is_local_upload_url( $url ) ) {
+		return $url;
+	}
+
+	if ( mrp_is_generated_subsize_url( $url ) && mrp_upload_file_exists( $url ) ) {
 		return $url;
 	}
 
@@ -81,6 +148,19 @@ function mrp_rewrite_media_url( $url ) {
 	}
 
 	return str_replace( mrp_get_local_wpcontent_url(), mrp_get_remote_base(), $url );
+}
+
+function mrp_get_local_media_url( $url ) {
+	$remote_base = mrp_get_remote_base();
+	if ( '' === $remote_base || ! is_string( $url ) || '' === $url ) {
+		return $url;
+	}
+
+	if ( strpos( $url, $remote_base ) !== 0 ) {
+		return $url;
+	}
+
+	return mrp_get_local_wpcontent_url() . substr( $url, strlen( $remote_base ) );
 }
 
 function mrp_rewrite_text_content( $content ) {
@@ -105,6 +185,10 @@ function mrp_filter_url( $url ) {
 
 function mrp_filter_image_src( $image ) {
 	if ( is_array( $image ) && isset( $image[0] ) ) {
+		if ( mrp_should_enable_wpbakery_compat() && mrp_backtrace_contains_function( array( 'wpb_resize' ) ) ) {
+			return $image;
+		}
+
 		$image[0] = mrp_rewrite_media_url( $image[0] );
 	}
 
@@ -137,6 +221,26 @@ function mrp_filter_image_src_attribute( $attr, $attachment, $size ) {
 
 function mrp_replace_media_urls_in_content( $content ) {
 	return mrp_rewrite_text_content( $content );
+}
+
+function mrp_replace_url( $url ) {
+	return mrp_rewrite_media_url( $url );
+}
+
+function mrp_get_attachment_url_unfiltered( $attachment_id ) {
+	return mrp_with_rewrite_filters_suspended(
+		function () use ( $attachment_id ) {
+			return wp_get_attachment_url( $attachment_id );
+		}
+	);
+}
+
+function mrp_get_attachment_image_src_unfiltered( $attachment_id, $size = 'thumbnail', $icon = false ) {
+	return mrp_with_rewrite_filters_suspended(
+		function () use ( $attachment_id, $size, $icon ) {
+			return wp_get_attachment_image_src( $attachment_id, $size, $icon );
+		}
+	);
 }
 
 function mrp_start_output_buffer() {
