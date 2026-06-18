@@ -3,6 +3,21 @@
 // Panel ustawien.
 add_action( 'admin_menu', 'mrp_register_settings_page' );
 add_action( 'admin_init', 'mrp_register_settings' );
+add_filter( 'plugin_row_meta', 'mrp_add_settings_link_to_plugin_meta', 10, 2 );
+
+function mrp_add_settings_link_to_plugin_meta( $plugin_meta, $plugin_file ) {
+	if ( plugin_basename( MRP_PLUGIN_FILE ) !== $plugin_file ) {
+		return $plugin_meta;
+	}
+
+	$settings_link = sprintf(
+		'<a href="%s">%s</a>',
+		esc_url( admin_url( 'options-general.php?page=' . MRP_SETTINGS_PAGE ) ),
+		esc_html__( 'Ustawienia', 'media-redirect' )
+	);
+
+	return array_merge( array( $settings_link ), $plugin_meta );
+}
 
 function mrp_register_settings_page() {
 	add_options_page( 'Media Redirect', 'Media Redirect', 'manage_options', MRP_SETTINGS_PAGE, 'mrp_settings_page' );

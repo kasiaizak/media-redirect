@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Media Redirect to Production
  * Description: Redirects media URLs to the production domain, with optional local uploads fallback.
- * Version: 1.11.0
+ * Version: 1.11.1
  * Author: Kasia Izak i ChatGPT
  */
 
