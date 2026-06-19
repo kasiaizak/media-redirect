@@ -23,6 +23,7 @@ define( 'MRP_OPTION_ENABLE_WPBAKERY_COMPAT', 'mrp_enable_wpbakery_compat' );
 define( 'MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT', 'mrp_enable_horseclub_latest_post_compat' );
 
 require_once MRP_PLUGIN_DIR . 'includes/options.php';
+require_once MRP_PLUGIN_DIR . 'includes/media.php';
 require_once MRP_PLUGIN_DIR . 'includes/rewrite.php';
 if ( mrp_should_enable_wpbakery_compat() ) {
 	require_once MRP_PLUGIN_DIR . 'includes/plugins/wpbakery.php';

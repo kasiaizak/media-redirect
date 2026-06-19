@@ -24,85 +24,70 @@ function mrp_register_settings_page() {
 }
 
 function mrp_register_settings() {
-	register_setting(
-		MRP_SETTINGS_GROUP,
-		MRP_OPTION_PRODUCTION_DOMAIN,
-		array(
+	$settings = array(
+		MRP_OPTION_PRODUCTION_DOMAIN                   => array(
 			'sanitize_callback' => 'mrp_sanitize_production_domain',
-		)
-	);
-
-	register_setting(
-		MRP_SETTINGS_GROUP,
-		MRP_OPTION_CUSTOM_WPCONTENT,
-		array(
+		),
+		MRP_OPTION_CUSTOM_WPCONTENT                    => array(
 			'sanitize_callback' => 'mrp_sanitize_custom_wpcontent_path',
-		)
-	);
-
-	register_setting(
-		MRP_SETTINGS_GROUP,
-		MRP_OPTION_PREFER_LOCAL_UPLOADS,
-		array(
+		),
+		MRP_OPTION_PREFER_LOCAL_UPLOADS                => array(
 			'default'           => 1,
 			'sanitize_callback' => 'mrp_sanitize_checkbox',
-		)
-	);
-
-	register_setting(
-		MRP_SETTINGS_GROUP,
-		MRP_OPTION_ENABLE_WPBAKERY_COMPAT,
-		array(
+		),
+		MRP_OPTION_ENABLE_WPBAKERY_COMPAT              => array(
 			'default'           => 0,
 			'sanitize_callback' => 'mrp_sanitize_checkbox',
-		)
-	);
-
-	register_setting(
-		MRP_SETTINGS_GROUP,
-		MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT,
-		array(
+		),
+		MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT => array(
 			'default'           => 0,
 			'sanitize_callback' => 'mrp_sanitize_checkbox',
-		)
+		),
 	);
+
+	foreach ( $settings as $option_name => $args ) {
+		register_setting( MRP_SETTINGS_GROUP, $option_name, $args );
+	}
 
 	add_settings_section( 'mrp_main_section', '', '__return_empty_string', MRP_SETTINGS_PAGE );
-	add_settings_field(
-		MRP_OPTION_PRODUCTION_DOMAIN,
-		'Domena produkcyjna',
-		'mrp_render_production_domain_field',
-		MRP_SETTINGS_PAGE,
-		'mrp_main_section'
+
+	$fields = array(
+		array(
+			'id'       => MRP_OPTION_PRODUCTION_DOMAIN,
+			'title'    => __( 'Domena produkcyjna', 'media-redirect' ),
+			'callback' => 'mrp_render_production_domain_field',
+		),
+		array(
+			'id'       => MRP_OPTION_CUSTOM_WPCONTENT,
+			'title'    => __( 'Niestandardowa ścieżka wp-content (opcjonalnie)', 'media-redirect' ),
+			'callback' => 'mrp_render_custom_wpcontent_field',
+		),
+		array(
+			'id'       => MRP_OPTION_PREFER_LOCAL_UPLOADS,
+			'title'    => __( 'Preferuj lokalne pliki z uploads', 'media-redirect' ),
+			'callback' => 'mrp_render_prefer_local_uploads_field',
+		),
+		array(
+			'id'       => MRP_OPTION_ENABLE_WPBAKERY_COMPAT,
+			'title'    => __( 'Kompatybilność z wtyczką WPBakery', 'media-redirect' ),
+			'callback' => 'mrp_render_wpbakery_compat_field',
+		),
+		array(
+			'id'       => MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT,
+			'title'    => __( 'Kompatybilność z motywem HorseClub', 'media-redirect' ),
+			'callback' => 'mrp_render_horseclub_latest_post_compat_field',
+		),
 	);
-	add_settings_field(
-		MRP_OPTION_CUSTOM_WPCONTENT,
-		'Niestandardowa ścieżka wp-content (opcjonalnie)',
-		'mrp_render_custom_wpcontent_field',
-		MRP_SETTINGS_PAGE,
-		'mrp_main_section'
-	);
-	add_settings_field(
-		MRP_OPTION_PREFER_LOCAL_UPLOADS,
-		'Preferuj lokalne pliki z uploads',
-		'mrp_render_prefer_local_uploads_field',
-		MRP_SETTINGS_PAGE,
-		'mrp_main_section'
-	);
-	add_settings_field(
-		MRP_OPTION_ENABLE_WPBAKERY_COMPAT,
-		'Kompatybilność z wtyczką WPBakery',
-		'mrp_render_wpbakery_compat_field',
-		MRP_SETTINGS_PAGE,
-		'mrp_main_section'
-	);
-	add_settings_field(
-		MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT,
-		'Kompatybilność z motywem HorseClub',
-		'mrp_render_horseclub_latest_post_compat_field',
-		MRP_SETTINGS_PAGE,
-		'mrp_main_section'
-	);
+
+	foreach ( $fields as $field ) {
+		add_settings_field(
+			$field['id'],
+			$field['title'],
+			$field['callback'],
+			MRP_SETTINGS_PAGE,
+			'mrp_main_section'
+		);
+	}
 }
 
 function mrp_render_production_domain_field() {
@@ -114,7 +99,7 @@ function mrp_render_production_domain_field() {
 		placeholder="https://domena.pl"
 		class="regular-text"
 	/>
-	<p class="description">Wprowadź pełny adres, włącznie z protokołem http/https.</p>
+	<p class="description"><?php esc_html_e( 'Wprowadź pełny adres, włącznie z protokołem http/https.', 'media-redirect' ); ?></p>
 	<?php
 }
 
@@ -127,51 +112,45 @@ function mrp_render_custom_wpcontent_field() {
 		placeholder="/app"
 		class="regular-text"
 	/>
-	<p class="description">Wprowadź tylko, jeśli katalog `wp-content` ma inną nazwę lub ścieżkę.</p>
+	<p class="description"><?php esc_html_e( 'Wprowadź tylko, jeśli katalog `wp-content` ma inną nazwę lub ścieżkę.', 'media-redirect' ); ?></p>
 	<?php
 }
 
 function mrp_render_prefer_local_uploads_field() {
-	?>
-	<input type="hidden" name="<?php echo esc_attr( MRP_OPTION_PREFER_LOCAL_UPLOADS ); ?>" value="0" />
-	<label>
-		<input
-			type="checkbox"
-			name="<?php echo esc_attr( MRP_OPTION_PREFER_LOCAL_UPLOADS ); ?>"
-			value="1"
-			<?php checked( mrp_should_prefer_local_uploads() ); ?>
-		/>
-		Jeśli plik fizycznie istnieje w lokalnym katalogu `uploads`, zostaw lokalny URL zamiast przekierowania.
-	</label>
-	<?php
+	mrp_render_checkbox_field(
+		MRP_OPTION_PREFER_LOCAL_UPLOADS,
+		mrp_should_prefer_local_uploads(),
+		__( 'Jeśli plik fizycznie istnieje w lokalnym katalogu `uploads`, zostaw lokalny URL zamiast przekierowania.', 'media-redirect' )
+	);
 }
 
 function mrp_render_wpbakery_compat_field() {
-	?>
-	<input type="hidden" name="<?php echo esc_attr( MRP_OPTION_ENABLE_WPBAKERY_COMPAT ); ?>" value="0" />
-	<label>
-		<input
-			type="checkbox"
-			name="<?php echo esc_attr( MRP_OPTION_ENABLE_WPBAKERY_COMPAT ); ?>"
-			value="1"
-			<?php checked( mrp_should_enable_wpbakery_compat() ); ?>
-		/>
-		Włącz dodatkowe obejścia dla `vc_single_image` i `vc_gallery` z WPBakery.
-	</label>
-	<?php
+	mrp_render_checkbox_field(
+		MRP_OPTION_ENABLE_WPBAKERY_COMPAT,
+		mrp_should_enable_wpbakery_compat(),
+		__( 'Włącz dodatkowe obejścia dla `vc_single_image` i `vc_gallery` z WPBakery.', 'media-redirect' )
+	);
 }
 
 function mrp_render_horseclub_latest_post_compat_field() {
+	mrp_render_checkbox_field(
+		MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT,
+		mrp_should_enable_horseclub_latest_post_compat(),
+		__( 'Włącz obejście dla shortcode `horseclub_latest_post`, który renderuje obrazki przez `horseclub_resize()`.', 'media-redirect' )
+	);
+}
+
+function mrp_render_checkbox_field( $option_name, $checked, $description ) {
 	?>
-	<input type="hidden" name="<?php echo esc_attr( MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT ); ?>" value="0" />
+	<input type="hidden" name="<?php echo esc_attr( $option_name ); ?>" value="0" />
 	<label>
 		<input
 			type="checkbox"
-			name="<?php echo esc_attr( MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT ); ?>"
+			name="<?php echo esc_attr( $option_name ); ?>"
 			value="1"
-			<?php checked( mrp_should_enable_horseclub_latest_post_compat() ); ?>
+			<?php checked( $checked ); ?>
 		/>
-		Włącz obejście dla shortcode `horseclub_latest_post`, który renderuje obrazki przez `horseclub_resize()`.
+		<?php echo esc_html( $description ); ?>
 	</label>
 	<?php
 }
@@ -179,7 +158,7 @@ function mrp_render_horseclub_latest_post_compat_field() {
 function mrp_settings_page() {
 	?>
 	<div class="wrap">
-		<h1>Ustawienia Media Redirect</h1>
+		<h1><?php esc_html_e( 'Ustawienia Media Redirect', 'media-redirect' ); ?></h1>
 		<form method="post" action="options.php">
 			<?php settings_fields( MRP_SETTINGS_GROUP ); ?>
 			<?php do_settings_sections( MRP_SETTINGS_PAGE ); ?>

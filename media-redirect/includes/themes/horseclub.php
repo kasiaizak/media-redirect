@@ -10,61 +10,16 @@ function mrp_render_horseclub_latest_post_shortcode( $return, $tag, $attr, $m ) 
 	return mrp_get_horseclub_latest_post_shortcode_output( is_array( $attr ) ? $attr : array() );
 }
 
-function mrp_horseclub_build_upload_url_from_relative_path( $relative_path ) {
-	if ( ! is_string( $relative_path ) || '' === $relative_path ) {
-		return '';
-	}
-
-	$uploads = wp_upload_dir();
-	if ( empty( $uploads['baseurl'] ) ) {
-		return '';
-	}
-
-	return trailingslashit( $uploads['baseurl'] ) . ltrim( str_replace( '\\', '/', $relative_path ), '/' );
-}
-
-function mrp_horseclub_get_attachment_relative_file_path( $attachment_id ) {
-	$relative_file = get_post_meta( $attachment_id, '_wp_attached_file', true );
-	if ( is_string( $relative_file ) && '' !== $relative_file ) {
-		return ltrim( $relative_file, '/' );
-	}
-
-	$metadata = wp_get_attachment_metadata( $attachment_id );
-	if ( ! empty( $metadata['file'] ) && is_string( $metadata['file'] ) ) {
-		return ltrim( $metadata['file'], '/' );
-	}
-
-	return '';
-}
-
 function mrp_horseclub_get_resized_attachment_url( $attachment_id, $width, $height ) {
-	$metadata = wp_get_attachment_metadata( $attachment_id );
-	if ( ! empty( $metadata['sizes'] ) && is_array( $metadata['sizes'] ) ) {
-		$original_relative_path = mrp_horseclub_get_attachment_relative_file_path( $attachment_id );
-		$directory              = pathinfo( $original_relative_path, PATHINFO_DIRNAME );
-		$directory              = '.' === $directory ? '' : trim( $directory, '/' );
-
-		foreach ( $metadata['sizes'] as $size_data ) {
-			if ( empty( $size_data['file'] ) || empty( $size_data['width'] ) || empty( $size_data['height'] ) ) {
-				continue;
-			}
-
-			if ( (int) $size_data['width'] !== (int) $width || (int) $size_data['height'] !== (int) $height ) {
-				continue;
-			}
-
-			$relative_path = '' !== $directory ? $directory . '/' . $size_data['file'] : $size_data['file'];
-			$url           = mrp_horseclub_build_upload_url_from_relative_path( $relative_path );
-			if ( '' !== $url ) {
-				return mrp_rewrite_media_url( $url );
-			}
-		}
+	$metadata_image = mrp_get_attachment_metadata_resized_image_data( $attachment_id, $width, $height );
+	if ( $metadata_image ) {
+		return mrp_rewrite_media_url( $metadata_image['url'] );
 	}
 
 	$full_image = mrp_get_attachment_image_src_unfiltered( $attachment_id, 'full' );
 	if ( empty( $full_image[0] ) ) {
-		$original_relative_path = mrp_horseclub_get_attachment_relative_file_path( $attachment_id );
-		$full_url               = mrp_horseclub_build_upload_url_from_relative_path( $original_relative_path );
+		$original_relative_path = mrp_get_attachment_relative_file_path( $attachment_id );
+		$full_url               = mrp_build_upload_url_from_relative_path( $original_relative_path );
 	} else {
 		$full_url = $full_image[0];
 	}
@@ -73,34 +28,7 @@ function mrp_horseclub_get_resized_attachment_url( $attachment_id, $width, $heig
 		return '';
 	}
 
-	$url_parts = wp_parse_url( $full_url );
-	if ( empty( $url_parts['path'] ) ) {
-		return '';
-	}
-
-	$path_info = pathinfo( $url_parts['path'] );
-	if ( empty( $path_info['dirname'] ) || empty( $path_info['filename'] ) || empty( $path_info['extension'] ) ) {
-		return '';
-	}
-
-	$resized_path = $path_info['dirname'] . '/' . $path_info['filename'] . '-' . (int) $width . 'x' . (int) $height . '.' . $path_info['extension'];
-	$rebuilt_url  = '';
-
-	if ( ! empty( $url_parts['scheme'] ) ) {
-		$rebuilt_url .= $url_parts['scheme'] . '://';
-	}
-
-	if ( ! empty( $url_parts['host'] ) ) {
-		$rebuilt_url .= $url_parts['host'];
-	}
-
-	if ( ! empty( $url_parts['port'] ) ) {
-		$rebuilt_url .= ':' . $url_parts['port'];
-	}
-
-	$rebuilt_url .= $resized_path;
-
-	return mrp_rewrite_media_url( $rebuilt_url );
+	return mrp_rewrite_media_url( mrp_build_resized_url_from_original( $full_url, $width, $height ) );
 }
 
 function mrp_get_horseclub_latest_post_image_html( $post_id ) {
