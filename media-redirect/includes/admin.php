@@ -39,6 +39,10 @@ function mrp_register_settings() {
 			'default'           => 0,
 			'sanitize_callback' => 'mrp_sanitize_checkbox',
 		),
+		MRP_OPTION_ENABLE_REVSLIDER_COMPAT             => array(
+			'default'           => 0,
+			'sanitize_callback' => 'mrp_sanitize_checkbox',
+		),
 		MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT => array(
 			'default'           => 0,
 			'sanitize_callback' => 'mrp_sanitize_checkbox',
@@ -71,6 +75,11 @@ function mrp_register_settings() {
 			'id'       => MRP_OPTION_ENABLE_WPBAKERY_COMPAT,
 			'title'    => __( 'Kompatybilność z wtyczką WPBakery', 'media-redirect' ),
 			'callback' => 'mrp_render_wpbakery_compat_field',
+		),
+		array(
+			'id'       => MRP_OPTION_ENABLE_REVSLIDER_COMPAT,
+			'title'    => __( 'Kompatybilność z wtyczką Slider Revolution', 'media-redirect' ),
+			'callback' => 'mrp_render_revslider_compat_field',
 		),
 		array(
 			'id'       => MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT,
@@ -129,6 +138,14 @@ function mrp_render_wpbakery_compat_field() {
 		MRP_OPTION_ENABLE_WPBAKERY_COMPAT,
 		mrp_should_enable_wpbakery_compat(),
 		__( 'Włącz dodatkowe obejścia dla `vc_single_image` i `vc_gallery` z WPBakery.', 'media-redirect' )
+	);
+}
+
+function mrp_render_revslider_compat_field() {
+	mrp_render_checkbox_field(
+		MRP_OPTION_ENABLE_REVSLIDER_COMPAT,
+		mrp_should_enable_revslider_compat(),
+		__( 'Włącz dodatkowe obejście dla obrazów ładowanych z JSON-a Slider Revolution.', 'media-redirect' )
 	);
 }
 

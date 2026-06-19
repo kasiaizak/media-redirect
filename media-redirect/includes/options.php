@@ -16,6 +16,10 @@ function mrp_should_enable_wpbakery_compat() {
 	return (bool) get_option( MRP_OPTION_ENABLE_WPBAKERY_COMPAT, 0 );
 }
 
+function mrp_should_enable_revslider_compat() {
+	return (bool) get_option( MRP_OPTION_ENABLE_REVSLIDER_COMPAT, 0 );
+}
+
 function mrp_should_enable_horseclub_latest_post_compat() {
 	return (bool) get_option( MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT, 0 );
 }
