@@ -9,17 +9,11 @@ function mrp_get_custom_wpcontent_path() {
 }
 
 function mrp_should_prefer_local_uploads() {
-	return (bool) get_option( MRP_OPTION_PREFER_LOCAL_UPLOADS );
+	return (bool) get_option( MRP_OPTION_PREFER_LOCAL_UPLOADS, 1 );
 }
 
 function mrp_should_enable_wpbakery_compat() {
-	$enabled = get_option( MRP_OPTION_ENABLE_WPBAKERY_COMPAT, 'legacy_enabled' );
-
-	if ( 'legacy_enabled' === $enabled ) {
-		return true;
-	}
-
-	return (bool) $enabled;
+	return (bool) get_option( MRP_OPTION_ENABLE_WPBAKERY_COMPAT, 0 );
 }
 
 function mrp_should_enable_horseclub_latest_post_compat() {

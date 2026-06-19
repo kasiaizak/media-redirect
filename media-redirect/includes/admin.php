@@ -44,6 +44,7 @@ function mrp_register_settings() {
 		MRP_SETTINGS_GROUP,
 		MRP_OPTION_PREFER_LOCAL_UPLOADS,
 		array(
+			'default'           => 1,
 			'sanitize_callback' => 'mrp_sanitize_checkbox',
 		)
 	);
@@ -52,6 +53,7 @@ function mrp_register_settings() {
 		MRP_SETTINGS_GROUP,
 		MRP_OPTION_ENABLE_WPBAKERY_COMPAT,
 		array(
+			'default'           => 0,
 			'sanitize_callback' => 'mrp_sanitize_checkbox',
 		)
 	);
@@ -60,6 +62,7 @@ function mrp_register_settings() {
 		MRP_SETTINGS_GROUP,
 		MRP_OPTION_ENABLE_HORSECLUB_LATEST_POST_COMPAT,
 		array(
+			'default'           => 0,
 			'sanitize_callback' => 'mrp_sanitize_checkbox',
 		)
 	);
